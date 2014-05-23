@@ -2,38 +2,32 @@ var game = new Phaser.Game(480, 480, Phaser.AUTO, 'gamediv', { preload: preload,
 
 function preload() {
 	game.load.image('chip', '../Assets/tiles/chip.png');
-	game.load.tilemap('map', '../Assets/map.json', null, Phaser.Tilemap.TILED_JSON);
-	game.load.image('level', '../Assets/tiles.bmp')
+	game.load.tilemap('map', '../Assets/testMap.json', null, Phaser.Tilemap.TILED_JSON);
+	game.load.image('tiles', '../Assets/tileset.bmp')
 }
 
 var timeCheck;
 var map;
-var level;
+var tiles;
 
 function create() {
+
+	//timeCheck is used to delay user input later in the update() function.
 	timeCheck = game.time.now;
 	game.world.setBounds(0, 0, 600, 600);
-
-	//Ground and Platforms
 
 	//this loads a physics system into the game.
 	game.physics.startSystem(Phaser.Physics.ARCADE);
 
-	//this adds the Sky background. it comes first because everything 
-	//else is gonna be overlayed on top.
-	//the 0,0 args place the 'sky' image in the upper left corner of the screen.
 	map = game.add.tilemap('map');
-	map.addTilesetImage('level');
+	map.addTilesetImage('tileset','tiles');
 	layer = map.createLayer('Tile Layer 1');
 
-	//by making the platforms variable a group via game.add.group(),
-	//we can make changes to every object in the group at once.
+	//a group of walls we can collide with.
 	platforms = game.add.group();
-	//enableBody gives the objects in the group mass,
-	//so that we can collide and interact with them.
 	platforms.enableBody = true;
 
-
+	//adding the character sprite and 
 	player = game.add.sprite(0,0, 'chip');
 	game.physics.arcade.enable(player);
 
@@ -55,7 +49,7 @@ function update() {
 
 	//check for collisions
 	game.physics.arcade.collide(player, platforms);
-	
+
 	//can we wrap this in a function? lots of repetition here...
 	if (cursors.left.isDown && (game.time.now - timeCheck > 170)){
 		player.body.position.x -= 32;
@@ -69,9 +63,6 @@ function update() {
 	} else if (cursors.down.isDown && (game.time.now - timeCheck > 170)){
 		player.body.position.y += 32;
 		timeCheck = game.time.now;
-	} else {
-		player.animations.stop();
-		player.frame = 4;
 	}
 
 }
