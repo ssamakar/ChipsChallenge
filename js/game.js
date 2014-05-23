@@ -52,22 +52,27 @@ function update() {
 	//check for collisions
 	game.physics.arcade.collide(player, platforms);
 
-	//can we wrap this in a function? lots of repetition here...
-	if (cursors.left.isDown && (game.time.now - timeCheck > 170)){
-		player.body.position.x -= 32;
-		timeCheck = game.time.now;
-	} else if (cursors.right.isDown && (game.time.now - timeCheck > 170)){
-		player.body.position.x += 32;
-		timeCheck = game.time.now;
-	} else if (cursors.up.isDown && (game.time.now - timeCheck > 170)){
-		player.body.position.y -= 32;
-		timeCheck = game.time.now;
-	} else if (cursors.down.isDown && (game.time.now - timeCheck > 170)){
-		player.body.position.y += 32;
-		timeCheck = game.time.now;
-	}
+	//moves chip
+	move(player);
 
 }
 
+function move(player) {
+	//waits 200 milliseconds and then checks for arrow key movement
+	if(game.time.now - timeCheck > 200){
+		if (cursors.left.isDown){
+			player.body.position.x -= 32;
+			timeCheck = game.time.now;
+		} else if (cursors.right.isDown){
+			player.body.position.x += 32;
+			timeCheck = game.time.now;
+		} else if (cursors.up.isDown){
+			player.body.position.y -= 32;
+			timeCheck = game.time.now;
+		} else if (cursors.down.isDown){
+			player.body.position.y += 32;
+			timeCheck = game.time.now;
+		}
 
-
+	}
+}
