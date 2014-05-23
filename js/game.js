@@ -47,6 +47,8 @@ function create() {
 
 function update() {
 
+	game.phsysics.arcade.collide(player, layer2);
+
 	//check for collisions
 	game.physics.arcade.collide(player, platforms);
 
