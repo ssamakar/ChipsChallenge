@@ -2,7 +2,7 @@ var game = new Phaser.Game(480, 480, Phaser.AUTO, 'gamediv', { preload: preload,
 
 function preload() {
 	game.load.image('chip', '../Assets/tiles/chip.png');
-	game.load.tilemap('map', '../Assets/testMap.json', null, Phaser.Tilemap.TILED_JSON);
+	game.load.tilemap('map', '../Assets/mapWithLayers.json', null, Phaser.Tilemap.TILED_JSON);
 	game.load.image('tiles', '../Assets/tileset.bmp')
 }
 
@@ -22,7 +22,9 @@ function create() {
 	map = game.add.tilemap('map');
 	map.addTilesetImage('tileset','tiles');
 	layer = map.createLayer('Tile Layer 1');
-
+	walls = map.createLayer('Tile Layer 2');
+	walls.enableBody = true;
+	// walls.body.immovable = true;
 	//a group of walls we can collide with.
 	platforms = game.add.group();
 	platforms.enableBody = true;
@@ -32,8 +34,6 @@ function create() {
 	game.physics.arcade.enable(player);
 
 	player.body.collideWorldBounds = true;
-
-	// player.gravity = 200;
 
 	//Animations for walking. We define em here but we don't call em till later.
 	player.animations.add('left', [0,1,2,3], 10, true);
@@ -49,6 +49,7 @@ function update() {
 
 	//check for collisions
 	game.physics.arcade.collide(player, platforms);
+	game.physics.arcade.collide(player, walls);
 
 	//can we wrap this in a function? lots of repetition here...
 	if (cursors.left.isDown && (game.time.now - timeCheck > 170)){
@@ -63,7 +64,7 @@ function update() {
 	} else if (cursors.down.isDown && (game.time.now - timeCheck > 170)){
 		player.body.position.y += 32;
 		timeCheck = game.time.now;
-	}
+	} 
 
 }
 
