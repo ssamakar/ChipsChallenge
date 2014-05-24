@@ -1,7 +1,7 @@
 var game = new Phaser.Game(480, 480, Phaser.AUTO, 'gamediv', { preload: preload, create: create, update: update });
 
 function preload() {
-	game.load.image('chip', '../Assets/tiles/chip.png');
+	game.load.spritesheet('chip', '../Assets/tileset.bmp', 32,32);
 	game.load.tilemap('map', '../Assets/mapWithLayers.json', null, Phaser.Tilemap.TILED_JSON);
 	game.load.image('tiles', '../Assets/tileset.bmp')
 }
@@ -37,8 +37,10 @@ function create() {
 	player.body.collideWorldBounds = true;
 
 	//Animations for walking. We define em here but we don't call em till later.
-	player.animations.add('left', [0,1,2,3], 10, true);
-	player.animations.add('right', [5,6,7,8], 10, true);
+	player.animations.add('up', [90]);
+	player.animations.add('down', [104]);
+	player.animations.add('left', [97]);
+	player.animations.add('right', [111]);
 
 	game.camera.follow(player);
 
@@ -65,17 +67,19 @@ function move(player) {
 	//waits 200 milliseconds and then checks for arrow key movement
 	if(game.time.now - timeCheck > 200){
 		if (cursors.left.isDown){
+			player.animations.play('left');
 			player.body.position.x -= 32;
 			timeCheck = game.time.now;
 		} else if (cursors.right.isDown){
-			for (var i = 0; i<4; i++){
-			player.body.position.x += 8;
-		}
+			player.animations.play('right');
+			player.body.position.x += 16;
 			timeCheck = game.time.now;
 		} else if (cursors.up.isDown){
+			player.animations.play('up');
 			player.body.position.y -= 32;
 			timeCheck = game.time.now;
 		} else if (cursors.down.isDown){
+			player.animations.play('down');
 			player.body.position.y += 32;
 			timeCheck = game.time.now;}
 	}
