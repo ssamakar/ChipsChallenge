@@ -1,4 +1,4 @@
-var game = new Phaser.Game(512, 512, Phaser.AUTO, 'gamediv', { preload: preload, create: create, update: update });
+var game = new Phaser.Game(512, 512, Phaser.CANVAS, 'gamediv', { preload: preload, create: create, update: update, render: render});
 
 
 function preload() {
@@ -11,6 +11,9 @@ var timeCheck;
 var map;
 var tiles;
 var newX;
+var door;
+var inventory = {blue: 0, red: 0, green: 0, yellow: 0, chips: 0};
+var totalChips = 11;
 
 function create() {
 
@@ -36,17 +39,60 @@ function create() {
 
 	//adding the character sprites.
 	baddy = game.add.sprite(224,64, 'sprites', 40);
-	redKey = game.add.sprite(256,224, 'sprites', 41);
-	player = game.add.sprite(game.world.width/2, game.world.width/2 - 32, 'sprites', 104);
+	// redKey = game.add.sprite(512,544, 'sprites', 41);
+	// redKey = game.add.sprite(576,544, 'sprites', 41);
+	// blueKey = game.add.sprite(544,544, 'sprites', 48);
 	// ghost = game.add.sprite(160,96, 'sprites', 105);
 
-	//enabling physics for the elements we just added, except for the key.
-	game.physics.arcade.enable([player, baddy, wall]);
+	doorsGroup = game.add.group();
+	doorsGroup.create(416,416, 'sprites', 50); //red door
+	doorsGroup.create(416,544, 'sprites', 43); //blue door
 
+	keysGroup = game.add.group();
+	keysGroup.create(512, 544, 'sprites', 41);
+	keysGroup.create(576, 544, 'sprites', 41);
+	keysGroup.create(544,544, 'sprites', 48);
+
+	chipsGroup = game.add.group();
+	chipsGroup.create(416,352, 'sprites', 14);
+	chipsGroup.create(608,352, 'sprites', 14);
+	chipsGroup.create(352,448, 'sprites', 14);
+	chipsGroup.create(672,448, 'sprites', 14);
+	chipsGroup.create(448,480, 'sprites', 14);
+	chipsGroup.create(576,480, 'sprites', 14);
+	chipsGroup.create(352,512, 'sprites', 14);
+	chipsGroup.create(672,512, 'sprites', 14);
+	chipsGroup.create(512,544, 'sprites', 14);
+	chipsGroup.create(480,640, 'sprites', 14);
+	chipsGroup.create(544,640, 'sprites', 14);
+
+	motherboard = game.add.sprite(512,384, 'sprites', 16);
+
+	//adding the player last so he's rendered above everything else.
+	player = game.add.sprite(game.world.width/2, game.world.width/2 - 32, 'sprites', 104);
+	
+	//enabling physics for the elements we just added.
+	game.physics.arcade.enable([
+		player,
+		baddy,
+		wall,
+		doorsGroup,
+		keysGroup,
+		chipsGroup,
+		motherboard
+		]
+		);
+
+	//after enabling physics, we want to set the 'bodies' of the sprites to immovable.
 	//if we collide with a baddy we don't want to be able to nudge him out of his path.
+	//if we collide with a wall we don't want the wall to move.
 	baddy.body.immovable = true;
+	doorsGroup.setAllChildren('body.immovable', true);
+	motherboard.body.immovable = true;
+
 
 	//Chip won't be able to leave the bounds of the game world.
+	//This is kind of unnecessary because he's walled in, but just in case.
 	player.body.collideWorldBounds = true;
 
 	//This makes sure the camera is fixed to Chip's x and y coordinates.
@@ -84,14 +130,61 @@ function update() {
 		console.log('collision')
 	});
 
+	// game.physics.arcade.collide(player, doorsGroup);
+
+	game.physics.arcade.overlap(player, keysGroup, keyKiller, null, this);
+
+	game.physics.arcade.collide(player, doorsGroup, doorKiller, null, this);
+
+	game.physics.arcade.overlap(player, chipsGroup, chipKiller, null, this);
+
+	game.physics.arcade.collide(player, motherboard, motherboardKiller, null, this);
+
 	//collision detection doesn't work when tweening with absolute position,
 	//so since all of our movement is tile based, this serves as bootleg collision detection.
 	if (player.x == baddy.x && player.y == baddy.y) {
-		// alert("Game over, maaaaan!")
+		alert("Game over, maaaaan!")
 	}
-	if (player.x == redKey.x && player.y == redKey.y){
-		redKey.destroy();
-	} 
+}
+
+function render(){
+	game.debug.spriteInfo(player, 32, 32);
+}
+
+function keyKiller(player, key){
+	// console.log('overlap')
+	if (player.x == key.x && player.y == key.y){
+			if (key.frame == 41){
+				inventory.red++;
+			} else if (key.frame == 48){
+				inventory.blue++;
+			}
+			console.log('full overlap');
+			key.destroy();
+		} 
+	}
+
+function doorKiller(player, door){
+	if (door.frame == 50 && inventory.red > 0){
+		door.destroy();
+		inventory.red--;
+	} else if (door.frame == 43 && inventory.blue > 0){
+		door.destroy();
+		inventory.blue--;
+	}
+}
+
+function chipKiller(player, chip){
+	if (player.x == chip.x && player.y == chip.y){
+		inventory.chips++;
+		chip.destroy();
+	}
+}
+
+function motherboardKiller(player, mb){
+	if (inventory.chips == totalChips){
+		motherboard.destroy();
+	}
 }
 
 function move(player) {
