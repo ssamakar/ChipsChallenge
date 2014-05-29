@@ -2,14 +2,17 @@ var game = new Phaser.Game(576, 416, Phaser.CANVAS, 'gamediv', { preload: preloa
 
 
 function preload() {
-	game.load.spritesheet('sprites', '../assets/finaltileset.png', 32,32);
-	game.load.tilemap('map', '../assets/lvl1.json', null, Phaser.Tilemap.TILED_JSON);
-	game.load.image('tiles', '../assets/finaltileset.png');
-	game.load.image('frame', '../assets/frame.png');
+	game.load.spritesheet('sprites', '../Assets/tileset.bmp', 32,32);
+	game.load.tilemap('map', '../Assets/lvl1.json', null, Phaser.Tilemap.TILED_JSON);
+	game.load.image('tiles', '../Assets/tileset.bmp');
+	game.load.image('frame', '../Assets/frame.png');
 }
 
-//some variables we'll be needing down the road.
 var timeCheck,
+	map,
+	tiles,
+	newX,
+	door,
 	inventory = {
 		blue: 0, 
 		red: 0, 
@@ -17,7 +20,8 @@ var timeCheck,
 		yellow: 0, 
 		chips: 0
 	},
-	totalChips = 11;
+	totalChips = 11,
+	ghostHitWall = false;
 
 function create() {
 
@@ -25,7 +29,7 @@ function create() {
 	timeCheck = game.time.now;
 
 	//0,0 is the upper left boundary of the world.
-	//1024,1024 is the size of the game world, even though we're restricted to the small game field made up by the walls.
+	//1024,1024 is the size of the game world. twice as big as the actual game window to allow for camera movement.
 	game.world.setBounds(0,0,1024,1024);
 
 	//this loads a physics system into the game.
@@ -42,19 +46,20 @@ function create() {
 	map.setCollision([8,11], true, 'Tile Layer 2');
 
 	//adding the character sprites.
-	//the first two arguments are x and y coordinates.
-	//the third is the name of the spritesheet from which we're selecting an image.
-	//the last argument is the spritesheet cell index we want.
 	baddy = game.add.sprite(224,64, 'sprites', 40);
+	// redKey = game.add.sprite(512,544, 'sprites', 41);
+	// redKey = game.add.sprite(576,544, 'sprites', 41);
+	// blueKey = game.add.sprite(544,544, 'sprites', 48);
+	// ghost = game.add.sprite(160,96, 'sprites', 105);
 
-	//we create groups for certain elements because we want them to have similar behavior.
 	doorsGroup = game.add.group();
 	doorsGroup.create(416,416, 'sprites', 50); //red door
 	doorsGroup.create(416,544, 'sprites', 43); //blue door
 
 	keysGroup = game.add.group();
-	keysGroup.create(576, 544, 'sprites', 41); //red key
-	keysGroup.create(544,544, 'sprites', 34); //blue key
+	keysGroup.create(512, 544, 'sprites', 41);
+	keysGroup.create(576, 544, 'sprites', 41);
+	keysGroup.create(544,544, 'sprites', 48);
 
 	chipsGroup = game.add.group();
 	chipsGroup.create(416,352, 'sprites', 14);
@@ -73,9 +78,14 @@ function create() {
 
 	//adding the player last so he's rendered above everything else.
 	player = game.add.sprite(game.world.width/2, game.world.height/2 - 32, 'sprites', 104);
+	
+	// testTile = game.add.sprite(game.world.width/2, game.world.height/2 + 32, 'sprites', 5);
+
+	// ghost = game.add.sprite(player.x+1, player.y+1, 'sprites', 1);
+	// ghost.scale.x = .5;
+	// ghost.scale.y = .5;
 
 	//enabling physics for the elements we just added.
-	//we can toss everything into an array and enable physics for all of em at once.
 	game.physics.arcade.enable([
 		player,
 		baddy,
@@ -84,10 +94,11 @@ function create() {
 		keysGroup,
 		chipsGroup,
 		motherboard
+		// ghost
 		]
 		);
 
-	//after enabling physics, we want to set the 'bodies' of some sprites to immovable.
+	//after enabling physics, we want to set the 'bodies' of the sprites to immovable.
 	//if we collide with a baddy we don't want to be able to nudge him out of his path.
 	//if we collide with a wall we don't want the wall to move.
 	baddy.body.immovable = true;
@@ -104,8 +115,6 @@ function create() {
 
 	cursors = game.input.keyboard.createCursorKeys();
 
-	//this is a tween function. This makes a predetermined path for our sprite to move.
-	//to see this baddy in action, disable collisions between player and wall in the update function.
 	//x coordinates have to be hardcoded. :(
 	//.yoyo() also will not work here.
 	var baddyMotion = game.add.tween(baddy).to({ x: 224 }, 1, Phaser.Easing.Linear.None, true, 300)
@@ -123,6 +132,9 @@ function create() {
     .loop()
     .start();
 
+ //    border = game.add.image(0,0,'frame');
+	// border.fixedToCamera = true;
+
 }
 
 
@@ -133,22 +145,19 @@ function update() {
 	move(player);
 
 	//check for collisions
-	//comment out this line to leave the game bounds and check out the baddy in the upper left of the game world!
 	game.physics.arcade.collide(player, wall);
 
-	// these all call functions that make keys disappear and add to inventory,
-	// doors open up if you have the proper key, and chips disappear and join your inventory when you collect them.
-	// five arguments each: 
-	// 1, 2) the two elements you're checking for collision/overlap
-	// 3) the function you want to execute if overlap/collision occur (1 and 2 will be passed as arguments)
-	// 4) a context function. the previous function (3) will only fire if (4) returns true.
-	// 5) the context for function (3)
-	game.physics.arcade.overlap(player, keysGroup, keyKiller, null, this);
-	game.physics.arcade.collide(player, doorsGroup, doorKiller, null, this);
-	game.physics.arcade.overlap(player, chipsGroup, chipKiller, null, this);
-	game.physics.arcade.collide(player, motherboard, motherboardKiller, null, this);
+	// game.physics.arcade.collide(ghost, wall, ghostCollision);
 
-	youWin(player);
+
+
+	game.physics.arcade.overlap(player, keysGroup, keyKiller, null, this);
+
+	game.physics.arcade.collide(player, doorsGroup, doorKiller, null, this);
+
+	game.physics.arcade.overlap(player, chipsGroup, chipKiller, null, this);
+
+	game.physics.arcade.collide(player, motherboard, motherboardKiller, null, this);
 
 	//collision detection doesn't work when tweening with absolute position,
 	//so since all of our movement is tile based, this serves as bootleg collision detection.
@@ -158,22 +167,32 @@ function update() {
 
 }
 
-
 function render(){
-	// uncomment this to see some useful(?) info for debugging.
-	// game.debug.spriteInfo(player, 32, 32);
+	game.debug.spriteInfo(player, 32, 32);
+
+}
+
+function ghostCollision(){
+	setTimeout(function (){
+		ghostHitWall = true;
+		ghost.x = player.x;
+		ghost.y = player.y;
+		console.log("ghost hit the wall");
+	}, 500)
 }
 
 function keyKiller(player, key){
+	// console.log('overlap')
 	if (player.x == key.x && player.y == key.y){
-		if (key.frame == 41){
-			inventory.red++;	
-		} else if (key.frame == 34){
-			inventory.blue++;
-		}
-		key.destroy();
-	} 
-}
+			if (key.frame == 41){
+				inventory.red++;	
+			} else if (key.frame == 48){
+				inventory.blue++;
+			}
+			console.log('full overlap');
+			key.destroy();
+		} 
+	}
 
 function doorKiller(player, door){
 	if (door.frame == 50 && inventory.red > 0){
@@ -186,43 +205,48 @@ function doorKiller(player, door){
 }
 
 function chipKiller(player, chip){
-	//if we walk on a chip...
 	if (player.x == chip.x && player.y == chip.y){
-		//add that chip to our inventory...
 		inventory.chips++;
-		//and then remove the sprite from the game. 
 		chip.destroy();
 	}
 }
 
 function motherboardKiller(player, mb){
-	//if we collect all the chips, remove the "motherboard" that blocks the path.
 	if (inventory.chips == totalChips){
 		mb.destroy();
 	}
 }
 
-function youWin(player){
-	if (player.x == 512 && player.y == 352){
-		player.frame = 66;
-	}
-}
-
 function move(player) {
-	// waits 100 milliseconds and then checks for arrow key movement
+	// waits 75 milliseconds and then checks for arrow key movement
 	if(game.time.now - timeCheck > 100){
+
 		if (cursors.left.isDown){
-			//change the player's sprite to one that corresponds with the direction of the movement
 			player.frame = 97;
-			//move the player 16 pixels to the left.
-			//tiles are 32x32, but if we move 32 pixels, we won't be able to check for collision detection.
 			player.body.x -= 16;
-			//reset the movement timer.
 			timeCheck = game.time.now;
 		} else if (cursors.right.isDown){
-			player.frame = 111;
-			player.body.x += 16;
-			timeCheck = game.time.now;
+			// ghost.body.velocity.x = 100;
+
+
+			// if (!collisionDetector){
+			// 	console.log("path is free");
+				player.frame = 111;
+				player.body.x += 16;
+				// ghost.x = player.x;
+				// ghost.y = player.y;
+				// ghostHitWall = false;
+				timeCheck = game.time.now;
+			// } else {
+			// 	console.log("path is blocked");
+			// 	ghost.x = player.x;
+			// 	ghost.y = player.y;
+			// 	// ghostHitWall = false;
+			// 	timeCheck = game.time.now;
+			// }
+
+
+
 		} else if (cursors.up.isDown){
 			player.frame = 90;
 			player.body.position.y -= 16;
@@ -233,4 +257,6 @@ function move(player) {
 			timeCheck = game.time.now;
 		}
 	}
+	ghostHitWall = false;
+	return ghostHitWall;
 }
