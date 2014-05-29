@@ -1,3 +1,0 @@
-The individual tiles are being cropped in Photoshop and converted to .jpg at the highest quality. They might turn out to be unnecessarily large in the long run, but we can batch resize them later. For now, I'll continue saving at high quality.
-
-Tiles.bmp is the source. Individual tiles are named to the best of my knowledge, feel free to change them if you think you have a more name.
