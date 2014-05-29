@@ -1,0 +1,11 @@
+#gamediv {
+	width: 576px;
+	height: 416px;
+	margin: 0 auto;
+}
+
+#container {
+	width: 700px;
+	margin: 0 auto;
+	text-align: center;
+}
